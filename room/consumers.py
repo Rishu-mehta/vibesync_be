@@ -126,16 +126,33 @@ class RoomConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         user = self.scope['user']
         if user.is_authenticated:
-            logger.info(f"Message received from {user.username}: {text_data}")
-            # Broadcast the message to everyone in the room
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'chat_message',
-                    'message': text_data,
-                    'username': user.username
-                }
-            )
+            try:
+                # Parse the received message
+                message_data = json.loads(text_data)
+                logger.info(f"Message received from {user.username}: {message_data}")
+                
+                # If the message is nested in a JSON string, parse it
+                message = message_data.get('message', '')
+                if isinstance(message, str):
+                    try:
+                        parsed_message = json.loads(message)
+                        if isinstance(parsed_message, dict):
+                            message = parsed_message.get('message', message)
+                    except json.JSONDecodeError:
+                        # If message is not JSON, use it as is
+                        pass
+                
+                # Broadcast the message to everyone in the room
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'chat_message',
+                        'message': message,
+                        'username': user.username
+                    }
+                )
+            except json.JSONDecodeError:
+                logger.error(f"Invalid JSON received: {text_data}")
         else:
             logger.warning("Unauthorized access to WebSocket.")
             await self.send(text_data="Unauthorized access!")

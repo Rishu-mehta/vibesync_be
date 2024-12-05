@@ -11,6 +11,7 @@ class Room(models.Model):
     is_playing = models.BooleanField(default=False)  # Indicates if the video is playing
     video_quality = models.CharField(max_length=10, blank=True, null=True)  # Tracks current video quality
     members = models.ManyToManyField(User, related_name='rooms', blank=True)  # Room members
+    is_movie_sync_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return self.room_id
