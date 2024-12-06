@@ -184,16 +184,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
                             'username': user.username
                         }
                     )
-                elif message_type == 'sfu_signal':
-                    # Broadcast signaling data to other participants
-                    await self.channel_layer.group_send(
-                        self.room_group_name,
-                        {
-                            'type': 'sfu_signal',
-                            'signal':data['signal'] ,
-                            'username': self.scope['user'].username
-                        }
-                    )
 
             except json.JSONDecodeError:
                 logger.error(f"Invalid JSON received: {text_data}")
@@ -215,13 +205,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
             'action': event['action'],
             'timestamp': event['timestamp'],
             'video_url': event['video_url'],
-            'username': event['username']
-        }))
-    async def sfu_signal(self, event):
-        # Forward the signaling data to the client
-        await self.send(text_data=json.dumps({
-            'type': 'sfu_signal',
-            'signal': event['signal'],
             'username': event['username']
         }))
 
