@@ -184,6 +184,20 @@ class RoomConsumer(AsyncWebsocketConsumer):
                             'username': user.username
                         }
                     )
+                elif message_type in ['webrtc_offer', 'webrtc_answer', 'webrtc_ice_candidate']:
+                    # Ensure 'data' is defined correctly
+                    to_user = message_data.get('to', None)
+                    content = message_data.get('content', None)
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': message_type,
+                            'from': user.username,
+                            'to': to_user,
+                            'content': content,
+                        }
+                    )
+
 
             except json.JSONDecodeError:
                 logger.error(f"Invalid JSON received: {text_data}")
@@ -230,6 +244,30 @@ class RoomConsumer(AsyncWebsocketConsumer):
             'video_url': event['video_url'],
             'username': event['username']
         }))
+    async def webrtc_offer(self, event):
+        if event['to'] == self.user.username:
+            await self.send(json.dumps({
+                'type': 'webrtc_offer',
+                'from': event['from'],
+                'content': event['content'],
+            }))
+
+    async def webrtc_answer(self, event):
+        if event['to'] == self.user.username:
+            await self.send(json.dumps({
+                'type': 'webrtc_answer',
+                'from': event['from'],
+                'content': event['content'],
+            }))
+
+    async def webrtc_ice_candidate(self, event):
+        if event['to'] == self.user.username:
+            await self.send(json.dumps({
+                'type': 'webrtc_ice_candidate',
+                'from': event['from'],
+                'content': event['content'],
+            }))
+
 
     @sync_to_async
     def get_user_from_token(self, validated_token):
